@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>House Occupancy Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+        }
+        #status {
+            font-size: 24px;
+            padding: 20px;
+            margin: 20px auto;
+            width: 250px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .vacant {
+            background-color: #4CAF50; /* Green */
+            color: white;
+        }
+        .occupied {
+            background-color: #f44336; /* Red */
+            color: white;
+        }
+        .btn {
+            padding: 15px 30px;
+            margin: 20px 10px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        #enterBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #exitBtn {
+            background-color: #FF9800;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+        #userSelect {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            width: 200px;
+        }
+        #lastUpdated {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>House Occupancy Tracker</h1>
+    
+    <div id="status" class="vacant">Loading...</div>
+    
+    <select id="userSelect">
+        <option value="">Select User</option>
+        <option value="User 1">User 1</option>
+        <option value="User 2">User 2</option>
+        <option value="User 3">User 3</option>
+        <option value="User 4">User 4</option>
+    </select>
+    
+    <div>
+        <button id="enterBtn" class="btn hidden" onclick="enterHouse()">Enter House</button>
+        <button id="exitBtn" class="btn hidden" onclick="exitHouse()">Exit House</button>
+    </div>
+    
+    <div id="lastUpdated"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM elements
+        const statusDiv = document.getElementById('status');
+        const userSelect = document.getElementById('userSelect');
+        const enterBtn = document.getElementById('enterBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        const lastUpdatedDiv = document.getElementById('lastUpdated');
+        
+        // State variables
+        let currentUser = null;
+        
+        // Listen for changes in the database
+        database.ref('houseStatus').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                updateUI(data.occupied, data.currentUser, data.timestamp);
+            } else {
+                // Initialize database if empty
+                database.ref('houseStatus').set({
+                    occupied: false,
+                    currentUser: null,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+        });
+        
+        function updateUI(occupied, user, timestamp) {
+            // Update status display
+            if (occupied) {
+                statusDiv.className = 'occupied';
+                statusDiv.textContent = `OCCUPIED by ${user}`;
+                enterBtn.classList.add('hidden');
+                exitBtn.classList.remove('hidden');
+                userSelect.disabled = true;
+            } else {
+                statusDiv.className = 'vacant';
+                statusDiv.textContent = 'VACANT';
+                enterBtn.classList.remove('hidden');
+                exitBtn.classList.add('hidden');
+                userSelect.disabled = false;
+            }
+            
+            // Update last updated time
+            if (timestamp) {
+                const date = new Date(timestamp);
+                lastUpdatedDiv.textContent = `Last updated: ${date.toLocaleString()}`;
+            }
+            
+            // Store current user locally
+            currentUser = user;
+        }
+        
+        function enterHouse() {
+            const user = userSelect.value;
+            
+            if (!user) {
+                alert('Please select a user first');
+                return;
+            }
+            
+            // Show loading state
+            document.body.classList.add('loading');
+            
+            // Update database
+            database.ref('houseStatus').set({
+                occupied: true,
+                currentUser: user,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                document.body.classList.remove('loading');
+            }).catch((error) => {
+                alert('Error updating status: ' + error.message);
+                document.body.classList.remove('loading');
+            });
+        }
+        
+        function exitHouse() {
+            // Show loading state
+            document.body.classList.add('loading');
+            
+            // Update database
+            database.ref('houseStatus').set({
+                occupied: false,
+                currentUser: null,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                document.body.classList.remove('loading');
+            }).catch((error) => {
+                alert('Error updating status: ' + error.message);
+                document.body.classList.remove('loading');
+            });
+        }
+    </script>
+</body>
+</html>
