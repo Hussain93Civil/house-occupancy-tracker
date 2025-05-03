@@ -25,10 +25,6 @@
             background-color: #f44336; /* Red */
             color: white;
         }
-        .loading {
-            background-color: #cccccc;
-            color: #333333;
-        }
         .btn {
             padding: 15px 30px;
             margin: 20px 10px;
@@ -65,9 +61,9 @@
 <body>
     <h1>House Occupancy Tracker</h1>
     
-    <div id="status" class="loading">Loading...</div>
+    <div id="status" class="vacant">VACANT</div>
     
-    <select id="userSelect" class="hidden">
+    <select id="userSelect">
         <option value="">Select User</option>
         <option value="User 1">User 1</option>
         <option value="User 2">User 2</option>
@@ -76,7 +72,7 @@
     </select>
     
     <div>
-        <button id="enterBtn" class="btn hidden" onclick="enterHouse()">Enter House</button>
+        <button id="enterBtn" class="btn" onclick="enterHouse()">Enter House</button>
         <button id="exitBtn" class="btn hidden" onclick="exitHouse()">Exit House</button>
     </div>
     
@@ -94,39 +90,7 @@
         let currentUser = null;
         let isOccupied = false;
         
-        // Initialize UI
-        function initApp() {
-            // Simulate loading data (replace with real Firebase code if needed)
-            setTimeout(() => {
-                // Default to vacant status
-                updateUI(false, null);
-                
-                // Show user selection
-                userSelect.classList.remove('hidden');
-                
-                // Show appropriate button
-                enterBtn.classList.remove('hidden');
-            }, 1000);
-        }
-        
-        function updateUI(occupied, user) {
-            isOccupied = occupied;
-            currentUser = user;
-            
-            if (occupied) {
-                statusDiv.className = 'occupied';
-                statusDiv.textContent = `OCCUPIED by ${user}`;
-                enterBtn.classList.add('hidden');
-                exitBtn.classList.remove('hidden');
-                userSelect.disabled = true;
-            } else {
-                statusDiv.className = 'vacant';
-                statusDiv.textContent = 'VACANT';
-                enterBtn.classList.remove('hidden');
-                exitBtn.classList.add('hidden');
-                userSelect.disabled = false;
-            }
-            
+        function updateUI() {
             // Update last updated time
             lastUpdatedDiv.textContent = `Last updated: ${new Date().toLocaleString()}`;
         }
@@ -144,7 +108,14 @@
                 return;
             }
             
-            updateUI(true, user);
+            currentUser = user;
+            isOccupied = true;
+            statusDiv.className = 'occupied';
+            statusDiv.textContent = `OCCUPIED by ${user}`;
+            enterBtn.classList.add('hidden');
+            exitBtn.classList.remove('hidden');
+            userSelect.disabled = true;
+            updateUI();
         }
         
         function exitHouse() {
@@ -153,11 +124,18 @@
                 return;
             }
             
-            updateUI(false, null);
+            currentUser = null;
+            isOccupied = false;
+            statusDiv.className = 'vacant';
+            statusDiv.textContent = 'VACANT';
+            enterBtn.classList.remove('hidden');
+            exitBtn.classList.add('hidden');
+            userSelect.disabled = false;
+            updateUI();
         }
         
-        // Initialize the app
-        window.onload = initApp;
+        // Initialize the UI
+        updateUI();
     </script>
 </body>
 </html>
