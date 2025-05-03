@@ -25,6 +25,10 @@
             background-color: #f44336; /* Red */
             color: white;
         }
+        .loading {
+            background-color: #cccccc;
+            color: #333333;
+        }
         .btn {
             padding: 15px 30px;
             margin: 20px 10px;
@@ -56,18 +60,14 @@
             font-size: 14px;
             color: #666;
         }
-        .loading {
-            opacity: 0.5;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
     <h1>House Occupancy Tracker</h1>
     
-    <div id="status" class="vacant">Loading...</div>
+    <div id="status" class="loading">Loading...</div>
     
-    <select id="userSelect">
+    <select id="userSelect" class="hidden">
         <option value="">Select User</option>
         <option value="User 1">User 1</option>
         <option value="User 2">User 2</option>
@@ -82,26 +82,7 @@
     
     <div id="lastUpdated"></div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
         // DOM elements
         const statusDiv = document.getElementById('status');
         const userSelect = document.getElementById('userSelect');
@@ -111,24 +92,27 @@
         
         // State variables
         let currentUser = null;
+        let isOccupied = false;
         
-        // Listen for changes in the database
-        database.ref('houseStatus').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                updateUI(data.occupied, data.currentUser, data.timestamp);
-            } else {
-                // Initialize database if empty
-                database.ref('houseStatus').set({
-                    occupied: false,
-                    currentUser: null,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-        });
+        // Initialize UI
+        function initApp() {
+            // Simulate loading data (replace with real Firebase code if needed)
+            setTimeout(() => {
+                // Default to vacant status
+                updateUI(false, null);
+                
+                // Show user selection
+                userSelect.classList.remove('hidden');
+                
+                // Show appropriate button
+                enterBtn.classList.remove('hidden');
+            }, 1000);
+        }
         
-        function updateUI(occupied, user, timestamp) {
-            // Update status display
+        function updateUI(occupied, user) {
+            isOccupied = occupied;
+            currentUser = user;
+            
             if (occupied) {
                 statusDiv.className = 'occupied';
                 statusDiv.textContent = `OCCUPIED by ${user}`;
@@ -144,13 +128,7 @@
             }
             
             // Update last updated time
-            if (timestamp) {
-                const date = new Date(timestamp);
-                lastUpdatedDiv.textContent = `Last updated: ${date.toLocaleString()}`;
-            }
-            
-            // Store current user locally
-            currentUser = user;
+            lastUpdatedDiv.textContent = `Last updated: ${new Date().toLocaleString()}`;
         }
         
         function enterHouse() {
@@ -161,38 +139,25 @@
                 return;
             }
             
-            // Show loading state
-            document.body.classList.add('loading');
+            if (isOccupied) {
+                alert(`House is already occupied by ${currentUser}`);
+                return;
+            }
             
-            // Update database
-            database.ref('houseStatus').set({
-                occupied: true,
-                currentUser: user,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                document.body.classList.remove('loading');
-            }).catch((error) => {
-                alert('Error updating status: ' + error.message);
-                document.body.classList.remove('loading');
-            });
+            updateUI(true, user);
         }
         
         function exitHouse() {
-            // Show loading state
-            document.body.classList.add('loading');
+            if (!isOccupied) {
+                alert('House is already vacant');
+                return;
+            }
             
-            // Update database
-            database.ref('houseStatus').set({
-                occupied: false,
-                currentUser: null,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                document.body.classList.remove('loading');
-            }).catch((error) => {
-                alert('Error updating status: ' + error.message);
-                document.body.classList.remove('loading');
-            });
+            updateUI(false, null);
         }
+        
+        // Initialize the app
+        window.onload = initApp;
     </script>
 </body>
 </html>
